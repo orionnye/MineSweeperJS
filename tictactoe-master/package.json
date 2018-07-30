@@ -1,0 +1,15 @@
+{
+  "name": "tictactoe",
+  "version": "1.0.0",
+  "main": "lib/Game.js",
+  "repository": "https://github.com/krisnye/tictactoe.git",
+  "scripts": {
+    "watch": "tsc -w & nodemon ./lib/Game.js"
+  },
+  "author": "Kris Nye <krisnye@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "readline-sync": "^1.4.9"
+  }
+}
