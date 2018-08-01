@@ -2,11 +2,9 @@ declare var require: any
 var readlineSync = require('readline-sync')
 
 import Board, {Token} from "./Board"
-import * as ai from "./AI"
 
-let board = new Board(10, 10, 10)
-
-// let aiToken: Token = "O"
+let board = new Board(10, 10)
+board.placeMines(10)
 
 while (!board.isBombed()) {
     board.render()
@@ -15,10 +13,9 @@ while (!board.isBombed()) {
     let values = value.split(/[ ,]/g)
     let x = parseInt(values[0])
     let y = parseInt(values[1])
-    board.move(x, y)
+    board.getCell(x, y).revealed = true
+    board.infectZeroes()
 }
 
-console.log('game over')
+console.log('KAABOOM!...game over')
 board.render()
-
-

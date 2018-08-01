@@ -4,7 +4,9 @@
   "main": "lib/Game.js",
   "repository": "https://github.com/krisnye/tictactoe.git",
   "scripts": {
-    "watch": "tsc -w & nodemon ./lib/Game.js"
+    "watch": "tsc -w",
+    "run": "node lib/Board.js",
+    "debug": "node --inspect-brk lib/Board.js"
   },
   "author": "Kris Nye <krisnye@gmail.com>",
   "license": "MIT",

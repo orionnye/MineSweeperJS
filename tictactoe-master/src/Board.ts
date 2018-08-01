@@ -2,99 +2,119 @@
 export type Token = "B" | number
 export type Cell = string | Token //I wanted to assign only "#" and Token
 
+export type MineCell = { bomb: any, revealed: boolean}
+
 export default class Board {
     //Board Properties
-    rowValues: Cell[][] = []
-    displayRows: Cell[][] = []
-
-    constructor(width: number, height: number, bombCount: number) {
-        //Pushes the empty values base for the Board
-        for (let h = 0; h < height; h++) {
-            let row = []
-            let displayRow = []
-            for (let w = 0; w < width; w++) {
-                row.push(0)
-                displayRow.push("#")
-            }
-            this.rowValues.push(row)
-            this.displayRows.push(displayRow)
-        }
-        //Pushes random Bombs onto the grid
-        for (let b = 0; b < bombCount; b++) {
-            let mineX = Math.floor(Math.random() * width) 
-            let mineY = Math.floor(Math.random() * height)
-            this.rowValues[mineY][mineX] = "B"
-        }
-        //Counts surrounding Bombs and reassigns value
+    rows: MineCell[][] = []
+    width: number
+    height: number
+    constructor(width: number, height: number) {
+        this.width = width
+        this.height = height
         for (let y = 0; y < height; y++) {
+            let row = []
             for (let x = 0; x < width; x++) {
-                let bombDanger = 0
-                //up
-                if (y > 0 && this.rowValues[y - 1][x] == "B")
-                    bombDanger += 1
-                //down
-                if (y < height - 1 && this.rowValues[y + 1][x] == "B")
-                    bombDanger += 1
-                //left
-                if (x > 0 && this.rowValues[y][x - 1] == "B")
-                    bombDanger += 1
-                //right
-                if (x < width - 1 && this.rowValues[y][x + 1] == "B")
-                    bombDanger += 1
-                //upper
-                if (y > 0) {
-                    //left
-                    if (x > 0 && this.rowValues[y - 1][x - 1] == "B")
-                        bombDanger += 1
-                    //right
-                    if (x < width - 1 && this.rowValues[y - 1][x + 1] == "B")
-                        bombDanger += 1
-                }
-                //lower
-                if (y < height - 1) {
-                    //left
-                    if (x > 0 && this.rowValues[y + 1][x -1] == "B")
-                        bombDanger += 1
-                    //right
-                    if (x < width && this.rowValues[y + 1][x + 1] == "B")
-                        bombDanger += 1
-                }
+                row.push({ bomb: false, revealed: false })
+            }
+            this.rows.push(row)
+        }
+    }
 
-                if (this.rowValues[y][x] != "B"){
-                    this.rowValues[y][x] = bombDanger
-                }
+    getCell(x: number , y: number): MineCell {
+        if (y >= 0 && y < this.height) {
+            if (x >= 0 && x < this.width) {
+                return this.rows[y][x]
             }
         }
-
-    }
-    move(x: number, y: number) {
-        this.displayRows[y][x] = this.rowValues[y][x]
+        return {bomb: false, revealed: false}
     }
 
-    isBombed() {
-        for (let row of this.displayRows) {
-            for (let cell of row) {
-                if (cell == "B") {
-                    return true
+    placeMines(bombCount: number) {
+        for (let b = 0; b < bombCount; b++){
+            let mineX = Math.floor(Math.random() * this.width)
+            let mineY = Math.floor(Math.random() * this.height)
+            this.rows[mineY][mineX].bomb = true
+        }
+    }
+
+    countBombNeighbours(x: number, y: number): number {
+        let bombDanger =
+            //up and down
+            this.getCell(x, y-1).bomb + this.getCell(x, y+1).bomb
+            //left and right
+            + this.getCell(x-1, y).bomb + this.getCell(x+1, y).bomb
+            //top left and bottom right
+            + this.getCell(x-1, y-1).bomb + this.getCell(x+1, y+1).bomb
+            //top right and bottom left
+            + this.getCell(x+1, y-1).bomb + this.getCell(x-1, y+1).bomb
+        return bombDanger
+    }
+
+    isRevealedZero(x: number, y: number): Boolean {
+        return this.getCell(x, y).revealed && this.countBombNeighbours(x, y) == 0
+    }
+
+    isNeighborZero(x: number, y: number): Boolean {
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                if (j != 0 || i != 0) {
+                    if (this.isRevealedZero(x+j, y+i)) {
+                        return true
+                    }
                 }
             }
         }
         return false
     }
 
-    getNextEmpty() {
-        for (let y = 0; y < this.displayRows.length; y++) {
-            for (let x = 0; x < this.displayRows[y].length; x++) {
-                if (this.displayRows[y][x] == "#")
-                    return [x,y]
+    infectZeroes() {
+        let count
+        do {
+            count = 0
+            for (let y = 0; y < this.height; y++) {
+                for (let x = 0; x < this.width; x++) {
+                    if(!this.getCell(x, y).revealed) {
+                        if (this.isNeighborZero(x, y)) {
+                            this.getCell(x, y).revealed = true
+                            count += 1
+                        }
+                    }
+                }
             }
         }
-        throw new Error("Board is full")
+        while (count > 0);
     }
 
-    render() {
-        for (let row of this.displayRows) {
-            console.log(row.join('|'))
+    isBombed() {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.rows[y][x].bomb && this.rows[y][x].revealed) {
+                    return true
+                }
+            }
         }
+        return false
+    }
+    render() {
+        let returnString = []
+        
+        for (let y = 0; y < this.height; y++) {
+            let row = []
+            for (let x = 0; x < this.width; x++) {
+                //return bomb if that
+                if (this.rows[y][x].revealed){
+                    if (this.rows[y][x].bomb) {
+                        row.push("B")
+                    }
+                    else
+                        row.push(this.countBombNeighbours(x, y))
+                }
+                else
+                    row.push("_")
+            }
+            returnString.push(row.join("|"))
+        }
+        console.log(returnString.join("\n"))
     }
 }
